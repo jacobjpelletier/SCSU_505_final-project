@@ -5,15 +5,22 @@ Created on Thu Nov  8 12:27:52 2018
 
 @author: jacobpelletier
 """
+
 import http.server
-import requests
 from urllib.parse import unquote, parse_qs
 import os
-import threading
-from socketserver import ThreadingMixIn
 
+# Class that performs work on user data
 class CaffCalc(object):
+    '''
+    Initialization with attributes gathered from user input (no setter methods)
+    1) use verify_X methods to verify user provided attribute X
+    2) getter methods
+    3) current dose and future dose calculators
+    4) standard operator overloaders
 
+    Object is represented by current dose value
+    '''
     
     def __init__(self, roast, size, time, age, smoke, hourstosleep):
         self.roast = roast
@@ -22,14 +29,11 @@ class CaffCalc(object):
         self.age = age
         self.smoke = smoke
         self.hourstosleep = hourstosleep
-        
-    @classmethod
-    def aboutcaffcalc(self):
-        print('')
-       
+     
+    # 1) Verifiers
     def verify_roast(self):
         '''
-        for use with html form
+        for use with user input from html form, returns BOOL
         '''
         try:
             if self.roast in ['blonde','medium','dark','other']:
@@ -40,7 +44,7 @@ class CaffCalc(object):
 
     def verify_size(self):
         '''
-        for use with html form
+        for use with user input from html form, returns BOOL
         '''
         try:
             if self.size in ['small','medium','large']:
@@ -50,7 +54,7 @@ class CaffCalc(object):
 
     def verify_time(self):
         '''
-        for use with html form
+        for use with user input from html form, returns BOOL
         '''
         try:
             if int(self.time) in range(0,23):
@@ -60,7 +64,7 @@ class CaffCalc(object):
 
     def verify_age(self):
         '''
-        for use with html form
+        for use with user input from html form, returns BOOL
         '''
         try:
             if int(self.age) in range(0,120):
@@ -70,7 +74,7 @@ class CaffCalc(object):
             
     def verify_smoker(self):
         '''
-        for use with html form
+        for use with user input from html form, returns BOOL
         '''
         try:
             if self.smoke in ['True','False']:
@@ -80,7 +84,7 @@ class CaffCalc(object):
         
     def verify_hourstosleep(self):
         '''
-        for use with html form
+        for use with user input from html form, returns BOOL
         '''
         try:
             if int(self.hourstosleep) in range(0,23):
@@ -88,6 +92,7 @@ class CaffCalc(object):
         except:
             return False
 
+    # 2) Getters
     def getlastdose(self):
         return(self.lastdose)
     
@@ -100,8 +105,13 @@ class CaffCalc(object):
     def getsmoke(self):
         return(self.smoke)
     
+    # 3) calculator methods
     def currentdose(self):
-        
+        '''
+        uses verified user input (see verify methods) to calculate 
+        caffiene level, and uses hours since that dose (time) to return a value
+        for exponential decay.
+        '''
         ans = 0 
         dose = 0
         multiplier = 1.0
@@ -137,39 +147,45 @@ class CaffCalc(object):
         ans = dose*multiplier
             
         if self.smoke == True:
-            ans = ans*.5
+            ans = ans*.5 # smoker, metabolism of caff faster
         try:
             if int(self.age) >= 65:
-                ans = ans*1.333
+                ans = ans*1.333 # older than 65, metabolism of caff is slower
             elif int(self.age) <= 12:
-                ans = 0
+                ans = 0 # 12 and younger shouldnt have caffiene
             
                 return(None)
         except:
             pass
-        # calculating expontential decay given dose and time
+        # calculating expontential decay given dose and hours from dose
         ans = int(ans)*((0.5)**(int(self.time)/5))
         
         return int(ans)
     
     def futuredose(self):
-        
+        '''
+        uses verified user input (see verify methods) to calculate future
+        caffiene level, and uses hours until bedtime (hourstosleep) 
+        to return a value for exponential decay.
+        '''        
         dose = (int(self.currentdose())+200)
         
         if self.getsmoke() == True:
-            dose *= 0.5
+            dose *= 0.5 # smoker, metabolism of caff faster
         
         if int(self.getage()) >= 65:
-            dose *= 1.33
+            dose *= 1.33 # older than 65, metabolism of caff is slower
             
-        # calculating expontential decay given dose and time
+        # calculating expontential decay given dose and hours to sleep
         ans = int(dose)*((0.5)**(int(self.hourstosleep)/5))
         
+        # if caffiene level at bedtime is greater than 175mg, sleep is affected
         if ans > 175:
             return False
         else:
             return True
         
+    # 4) standard operator overloaders   
     def __str__(self):
         return(str(self.currentdose()))
         
@@ -210,7 +226,7 @@ class CaffCalc(object):
 memory = {}
 
 form = '''<!DOCTYPE html>
-<title>Bookmark Server</title>
+<title>Caffiene Calculator</title>
 <form method="POST">
     <h2>Find Out If You Should Have That Next Cup!</h2>
         <p><b>Introduction: </b>The average person should not drink more than
@@ -316,7 +332,9 @@ form = '''<!DOCTYPE html>
 
 
 def checkparams(field, params, response, header, end_headers, write):
-
+    '''
+    checks integrity of form data, returns error if fields are missing
+    '''
     if "{}".format(field) not in params:
         response(400)
         header('Content-type', 'text/plain; charset=utf-8')
@@ -327,8 +345,13 @@ def checkparams(field, params, response, header, end_headers, write):
         return
     
 
-class PrgHandler(http.server.BaseHTTPRequestHandler): #Shortener 
+class PrgHandler(http.server.BaseHTTPRequestHandler): 
+    '''
+    python http server module
+    docs: https://docs.python.org/3/library/http.server.html
     
+    allows for GET, POST, REDIRECT requests
+    '''
     def do_GET(self):
         # A GET request will either be for / (the root path) or for /some-name.
         # Strip off the / and we have either empty string or a name.
@@ -369,18 +392,22 @@ class PrgHandler(http.server.BaseHTTPRequestHandler): #Shortener
             checkparams(field, params, self.send_response, self.send_header, 
                            self.end_headers, self.wfile.write)
 
+        # all fields filled in, gather data from form
         roast = params["roast"][0]
         size = params["size"][0]
         time = params["time"][0]
         age = params["age"][0]
         smoker = params["smoker"][0]
         hourstosleep = params["hourstosleep"][0]
-  
+        
+        # initialize object for current form 
         finalans = CaffCalc(roast, size, time, age, smoker, hourstosleep)
-            
+        
+        
+        # verify form unput using CaffCalc class methods
         try:
             if finalans.verify_roast():
-                # This URI is good!  Remember it under the specified name.
+                # This input is good.  Remember it.
                 memory["Roast"] = roast
     
                 # Serve a redirect to the form.
@@ -388,7 +415,7 @@ class PrgHandler(http.server.BaseHTTPRequestHandler): #Shortener
                 self.send_header('Location', '/')
                 self.end_headers()
         except:
-            # This URI is good!  Remember it under the specified name.
+            # This input is no good.  Let the user know.
             memory["Roast"] = "Error in roast data."
 
             # Serve a redirect to the form.
@@ -398,7 +425,7 @@ class PrgHandler(http.server.BaseHTTPRequestHandler): #Shortener
             
         try:   
             if finalans.verify_size():
-                # This URI is good!  Remember it under the specified name.
+                # This input is good.  Remember it.
                 memory["Size"] = size
     
                 # Serve a redirect to the form.
@@ -406,7 +433,7 @@ class PrgHandler(http.server.BaseHTTPRequestHandler): #Shortener
                 self.send_header('Location', '/')
                 self.end_headers()
         except:
-            # This URI is good!  Remember it under the specified name.
+            # This input is no good.  Let the user know.
             memory["Size"] = "Error in size data."
 
             # Serve a redirect to the form.
@@ -416,7 +443,7 @@ class PrgHandler(http.server.BaseHTTPRequestHandler): #Shortener
             
         try:
             if finalans.verify_time():
-                # This URI is good!  Remember it under the specified name.
+                # This input is good.  Remember it.
                 memory["Time"] = time
     
                 # Serve a redirect to the form.
@@ -424,7 +451,7 @@ class PrgHandler(http.server.BaseHTTPRequestHandler): #Shortener
                 self.send_header('Location', '/')
                 self.end_headers()
         except:
-            # This URI is good!  Remember it under the specified name.
+            # This input is no good.  Let the user know.
             memory["Time"] = "Error in time data."
 
             # Serve a redirect to the form.
@@ -434,19 +461,20 @@ class PrgHandler(http.server.BaseHTTPRequestHandler): #Shortener
             
         try:  
             if finalans.verify_age():
+                # This input is good.  Remember it.
+                
                 if int(finalans.getage()) > 12:
-                    # This URI is good!  Remember it under the specified name.
-                    memory["Age"] = age
+                    memory["Age"] = age # age greater than 12, ok for coffee
                     
                 else:
-                    memory["Age"] = age+'  !!!'
+                    memory["Age"] = age+'  !!!' # too young, let user know
     
                 # Serve a redirect to the form.
                 self.send_response(303)
                 self.send_header('Location', '/')
                 self.end_headers()
         except:
-            # This URI is good!  Remember it under the specified name.
+            # This input is no good.  Let the user know.
             memory["Age"] = "Error in age data."
 
             # Serve a redirect to the form.
@@ -456,7 +484,7 @@ class PrgHandler(http.server.BaseHTTPRequestHandler): #Shortener
             
         try:
             if finalans.verify_smoker():
-                # This URI is good!  Remember it under the specified name.
+                # This input is good.  Remember it.
                 memory["Smoker"] = smoker
     
                 # Serve a redirect to the form.
@@ -464,7 +492,7 @@ class PrgHandler(http.server.BaseHTTPRequestHandler): #Shortener
                 self.send_header('Location', '/')
                 self.end_headers()
         except:
-            # This URI is good!  Remember it under the specified name.
+            # This input is no good.  Let the user know.
             memory["Smoker"] = "Error in smoker data."
 
             # Serve a redirect to the form.
@@ -474,10 +502,12 @@ class PrgHandler(http.server.BaseHTTPRequestHandler): #Shortener
             
         try:  
             if isinstance(int(finalans.currentdose()), int):
-                
+                # This input is good.  Remember it.
+                # 0 means an error occured in required attributes to calculate
                 if int(finalans.currentdose()) == 0:
                     memory["Current Dose"] = "Error in data collection."
                 else:
+                    # This input is good, no errors found.  Remember it. 
                     memory["Current Dose"] = finalans.currentdose()
     
                     # Serve a redirect to the form.
@@ -494,7 +524,7 @@ class PrgHandler(http.server.BaseHTTPRequestHandler): #Shortener
             
         try:   
             if finalans.verify_hourstosleep():
-                # This URI is good!  Remember it under the specified name.
+                # This input is good.  Remember it.
                 memory["Hours till sleep"] = hourstosleep
     
                 # Serve a redirect to the form.
@@ -502,7 +532,7 @@ class PrgHandler(http.server.BaseHTTPRequestHandler): #Shortener
                 self.send_header('Location', '/')
                 self.end_headers()
         except:
-            # This URI is good!  Remember it under the specified name.
+            # This input is no good.  Let the user know.
             memory["Hours to sleep"] = "Error in data collection."
 
             # Serve a redirect to the form.
@@ -512,7 +542,7 @@ class PrgHandler(http.server.BaseHTTPRequestHandler): #Shortener
             
         try:   
             if finalans.verify_hourstosleep():
-                # This URI is good!  Remember it under the specified name.
+                # This input is good.  Remember it.
                 memory["Should you have more coffee?"] = finalans.futuredose()
     
                 # Serve a redirect to the form.
@@ -520,7 +550,7 @@ class PrgHandler(http.server.BaseHTTPRequestHandler): #Shortener
                 self.send_header('Location', '/')
                 self.end_headers()
         except:
-            # This URI is good!  Remember it under the specified name.
+            # This input is no good.  Let the user know.
             memory["Should you have more coffee?"] = "Error in data collection."
 
             # Serve a redirect to the form.
