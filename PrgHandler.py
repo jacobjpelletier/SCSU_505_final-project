@@ -6,8 +6,11 @@ Created on Thu Nov  8 12:27:52 2018
 @author: jacobpelletier
 """
 import http.server
+import requests
 from urllib.parse import unquote, parse_qs
 import os
+import threading
+from socketserver import ThreadingMixIn
 
 class CaffCalc(object):
 
