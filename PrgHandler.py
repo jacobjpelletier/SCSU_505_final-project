@@ -222,7 +222,8 @@ class CaffCalc(object):
         
     def __gt__(self, other):
         return(int(self.currentdose()) > other)
-    
+
+# dictionary as a simple backend    
 memory = {}
 
 form = '''<!DOCTYPE html>
@@ -285,15 +286,17 @@ form = '''<!DOCTYPE html>
         </label>
         <br>
     <h3>Enter hours since last dose of coffee here. Enter in integer form.</h3>
-        <p>Coffee has a half life of around 5 hours.</p>
+        <p>Coffee has a half life of around 5 hours. Enter an integer between 
+        0 and 23 hours.</p>
         <label>Enter hours here:
             <input name="time">
         </label>
         <br>
     <h3>Enter in the form of integer of years.</h3>
         <p>If you are less than 12 years old, then you shouldnt drink coffee. 
-           If you are older than 65, then you metabolize cofee 33% slower</p> 
-       
+           If you are older than 65, then you metabolize cofee 33% slower.
+           Enter an integer between 0 and 120. If you are older than 120 do 
+           what you want.</p> 
         <label>Enter age here:
             <input name="age">
         </label>
@@ -304,14 +307,16 @@ form = '''<!DOCTYPE html>
             <input name="smoker">
         </label>
         <br>
-    <h3>How many hours away is your bedtime? Enter integer hours </h3>
-        <p>
+    <h3>How many hours away is your bedtime?</h3>
+        <p>Enter integer between 0 and 23. It is recommended that you do not
+        stay up for 24 hours or more.</p>
         <label>Hours untill bedtime:
             <input name="hourstosleep">
         </label>
         <br>
-        <button type="submit">Calculate!</button>
-        <br>
+    <br>
+    <button type="submit">Calculate!</button>
+    <br>
 </form>
 <h3>Note: These conclusions are most accurant if you drink less 400mg of 
     caffiene daily.</h3>
@@ -414,6 +419,14 @@ class PrgHandler(http.server.BaseHTTPRequestHandler):
                 self.send_response(303)
                 self.send_header('Location', '/')
                 self.end_headers()
+            else:
+                # This input is good.  Remember it.
+                memory["Roast"] = '!!ERROR!! '+size+' is not a valid option.'
+    
+                # Serve a redirect to the form.
+                self.send_response(303)
+                self.send_header('Location', '/')
+                self.end_headers()               
         except:
             # This input is no good.  Let the user know.
             memory["Roast"] = "Error in roast data."
@@ -432,6 +445,14 @@ class PrgHandler(http.server.BaseHTTPRequestHandler):
                 self.send_response(303)
                 self.send_header('Location', '/')
                 self.end_headers()
+            else:
+                # This input is no good.  Let the user know.
+                memory["Size"] = '!!ERROR!! '+size+' is not a valid option.'
+    
+                # Serve a redirect to the form.
+                self.send_response(303)
+                self.send_header('Location', '/')
+                self.end_headers()                
         except:
             # This input is no good.  Let the user know.
             memory["Size"] = "Error in size data."
@@ -444,7 +465,15 @@ class PrgHandler(http.server.BaseHTTPRequestHandler):
         try:
             if finalans.verify_time():
                 # This input is good.  Remember it.
-                memory["Time"] = time
+                memory["Time since last"] = time
+    
+                # Serve a redirect to the form.
+                self.send_response(303)
+                self.send_header('Location', '/')
+                self.end_headers()
+            else:
+                # This input is no good.  Let the user know.
+                memory["Time since last"] ='!!ERROR!! '+time+' is not a valid option.'
     
                 # Serve a redirect to the form.
                 self.send_response(303)
@@ -452,7 +481,7 @@ class PrgHandler(http.server.BaseHTTPRequestHandler):
                 self.end_headers()
         except:
             # This input is no good.  Let the user know.
-            memory["Time"] = "Error in time data."
+            memory["Time since last"] = "Error in time data."
 
             # Serve a redirect to the form.
             self.send_response(303)
@@ -468,6 +497,9 @@ class PrgHandler(http.server.BaseHTTPRequestHandler):
                     
                 else:
                     memory["Age"] = age+'  !!!' # too young, let user know
+                
+            else:
+                memory["Age"] = '!!ERROR!! '+age+' is not a valid option.'
     
                 # Serve a redirect to the form.
                 self.send_response(303)
@@ -487,6 +519,14 @@ class PrgHandler(http.server.BaseHTTPRequestHandler):
                 # This input is good.  Remember it.
                 memory["Smoker"] = smoker
     
+                # Serve a redirect to the form.
+                self.send_response(303)
+                self.send_header('Location', '/')
+                self.end_headers()
+            else:
+                # This input is no good.  Let the user know.
+                memory["Smoker"] = '!!ERROR!! '+smoker+' is not a valid option.'
+                
                 # Serve a redirect to the form.
                 self.send_response(303)
                 self.send_header('Location', '/')
@@ -515,7 +555,7 @@ class PrgHandler(http.server.BaseHTTPRequestHandler):
                     self.send_header('Location', '/')
                     self.end_headers()            
         except:
-            memory["Current Dose"] = "Error in data collection."
+            memory["Current Dose"] = "!!ERROR!! in data collection."
             
             # Serve a redirect to the form.
             self.send_response(303)
@@ -531,9 +571,19 @@ class PrgHandler(http.server.BaseHTTPRequestHandler):
                 self.send_response(303)
                 self.send_header('Location', '/')
                 self.end_headers()
+                
+            else:
+                # This input is no good.  Let the user know.
+                memory["Hours till sleep"] = ('!!ERROR!! '+hourstosleep+ 
+                       ' is not a valid option.')
+    
+                # Serve a redirect to the form.
+                self.send_response(303)
+                self.send_header('Location', '/')
+                self.end_headers()
         except:
             # This input is no good.  Let the user know.
-            memory["Hours to sleep"] = "Error in data collection."
+            memory["Hours till sleep"] = "Error in data collection."
 
             # Serve a redirect to the form.
             self.send_response(303)
@@ -541,7 +591,8 @@ class PrgHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             
         try:   
-            if finalans.verify_hourstosleep():
+            if (finalans.verify_hourstosleep() and 
+            isinstance(int(finalans.currentdose()), int)):
                 # This input is good.  Remember it.
                 memory["Should you have more coffee?"] = finalans.futuredose()
     
@@ -549,6 +600,9 @@ class PrgHandler(http.server.BaseHTTPRequestHandler):
                 self.send_response(303)
                 self.send_header('Location', '/')
                 self.end_headers()
+            else:
+                memory["Should you have more coffee?"] = ("!!ERROR!! Error in "
+                      "data collection.")
         except:
             # This input is no good.  Let the user know.
             memory["Should you have more coffee?"] = "Error in data collection."
@@ -559,9 +613,9 @@ class PrgHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             
 if __name__ == '__main__':
-
+    
     port = int(os.environ.get('PORT', 8000)) # Use PORT if its there
     server_address = ('', port)
     httpd = http.server.HTTPServer(server_address, PrgHandler)
     httpd.serve_forever()
-    
+ 
