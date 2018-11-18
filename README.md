@@ -8,10 +8,10 @@ The URI for the app: https://pacific-hollows-33257.herokuapp.com/
 Files:
 
 1) PrgHandler:
-  a. simple HTTP setup using python's server.http for handling http verbs
-    i. if run on local machine, use localport:8000
-  b. HTML form
-  c. class to handle form data
+  a) simple HTTP setup using python's server.http for handling http verbs. If run on local machine, \
+     open your browser and use "localport:8000" address. 
+  b) HTML form
+  c) class to handle form data
 
 * files necesary to deploy onto Heroku
 2) Procfile
