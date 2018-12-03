@@ -318,11 +318,13 @@ form = '''<!DOCTYPE html>
     <button type="submit">Calculate!</button>
     <br>
 </form>
-<h3>Note: These conclusions are most accurant if you drink less 400mg of 
-    caffiene daily.</h3>
-    <p>If the caffiene level calculated at bedtime is greater than 175mg, 
-    it will likely delay the time you would like to go to sleep by an hour.
-    Thus, 175mg was used to determine if you should (True) or should not (False)
+<h3>Note:</h3>
+    <b>These conclusions are most accurant if you drink less 400mg of 
+    caffiene daily.</b>
+    </br>
+    <p>If you are caffinated with 175mg or more of total caffiene by your bedtime, 
+    it will likely delay the time you would like to go to sleep by at least an hour.
+    Thus 175mg was used as a benchmark, whether you should (True) or should not (False)
     have more coffee. While you are asked what sort of commercial coffee you
     have had today, the next cup is assumed to contain the average amount of
     caffiene in a commercial cup of coffee (around 200mg)</p>
