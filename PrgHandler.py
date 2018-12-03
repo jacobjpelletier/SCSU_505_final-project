@@ -555,7 +555,7 @@ class PrgHandler(http.server.BaseHTTPRequestHandler):
                     self.send_header('Location', '/')
                     self.end_headers()            
         except:
-            memory["Current Dose"] = "!!ERROR!! in data collection."
+            memory["Current Dose"] = "!!ERROR!! Error in data collection."
             
             # Serve a redirect to the form.
             self.send_response(303)
