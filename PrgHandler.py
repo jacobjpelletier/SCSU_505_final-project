@@ -593,8 +593,11 @@ class PrgHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             
         try:   
-            if (finalans.verify_hourstosleep()==True and 
-            isinstance(int(finalans.currentdose()), int)==True):
+            if ((finalans.verify_hourstosleep()) and (finalans.verify_roast())
+                and (finalans.verify_size()) and (finalans.verify_time()) and
+                (finalans.verify_smoker()) and (finalans.verify_age()) and
+                (isinstance(int(finalans.currentdose()), int)==True)):
+                
                 # This input is good.  Remember it.
                 memory["Should you have more coffee?"] = finalans.futuredose()
     
